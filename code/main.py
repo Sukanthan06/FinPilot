@@ -74,7 +74,7 @@ def main() -> None:
     print(f"Deciding {len(ds.requests)} requests...")
     rows = []
     flexible_event_ids: set[str] = set()
-    valid_option_ids: dict[str, set[str]] = {}
+    payment_options_by_request: dict[str, list[dict]] = {}
 
     for req in ds.requests:
         rid = req["request_id"]
@@ -85,7 +85,7 @@ def main() -> None:
         for e in bundle.events:
             if e.flexibility in ("reducible", "stoppable", "reducible_or_stoppable"):
                 flexible_event_ids.add(e.event_id)
-        valid_option_ids[rid] = {o["payment_option_id"] for o in bundle.payment_options}
+        payment_options_by_request[rid] = bundle.payment_options
 
         change_labels = [
             (f"stop:{c.reference_event_id}" if c.kind == "stop" else f"reduce_to:{c.reference_event_id}:{fmt(c.new_amount)}")
@@ -110,7 +110,7 @@ def main() -> None:
 
     print("Auditing output...")
     requests_by_id = {r["request_id"]: r for r in ds.requests}
-    errors = audit_output(rows, requests_by_id, valid_option_ids, flexible_event_ids)
+    errors = audit_output(rows, requests_by_id, payment_options_by_request, flexible_event_ids)
     if errors:
         print(f"AUDIT FOUND {len(errors)} ISSUE(S):")
         for e in errors[:50]:
