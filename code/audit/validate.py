@@ -29,7 +29,28 @@ def _parse_changes(changes_str: str) -> list[str]:
     return changes_str.split("|")
 
 
-def audit_output(rows: list[dict], requests_by_id: dict[str, dict], valid_option_ids: dict[str, set[str]],
+def _plan_matches_some_option(plan: list[tuple[str, Decimal]], options: list[dict]) -> bool:
+    from datetime import date, timedelta
+
+    for opt in options:
+        if opt.get("payment_method") != "installments":
+            continue
+        try:
+            n = int(opt["number_of_payments"])
+            amount = Decimal(str(opt["payment_amount"]))
+            start = date.fromisoformat(opt["first_payment_date"])
+            freq = int(opt["payment_frequency_days"]) if opt.get("payment_frequency_days") else 0
+        except (KeyError, ValueError):
+            continue
+        expected = [((start + timedelta(days=freq * i)).isoformat(), amount) for i in range(n)]
+        if len(expected) == len(plan) and all(
+            d == pd and amt == pamt for (d, amt), (pd, pamt) in zip(expected, plan)
+        ):
+            return True
+    return False
+
+
+def audit_output(rows: list[dict], requests_by_id: dict[str, dict], payment_options_by_request: dict[str, list[dict]],
                   flexible_event_ids: set[str]) -> list[str]:
     errors: list[str] = []
 
@@ -83,13 +104,10 @@ def audit_output(rows: list[dict], requests_by_id: dict[str, dict], valid_option
                 errors.append(f"{rid}: partial_payment total {total} != requested_amount {requested_amount}")
 
         if method == "installments":
-            option_ids = valid_option_ids.get(rid, set())
-            # a valid installment plan must reproduce one supplied option's schedule exactly
-            matched = False
-            for opt_amount, opt_n in [(None, None)]:
-                pass
-            if not option_ids:
-                errors.append(f"{rid}: installments recommended but request has no payment options at all")
+            options = payment_options_by_request.get(rid, [])
+            matched = _plan_matches_some_option(plan, options)
+            if not matched:
+                errors.append(f"{rid}: installments plan {row['payment_plan']!r} matches no supplied payment option")
 
         if method in ("full_payment", "partial_payment", "installments") and not plan:
             errors.append(f"{rid}: {method} requires a non-empty payment_plan")
