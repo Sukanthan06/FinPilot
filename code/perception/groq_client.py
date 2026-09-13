@@ -50,17 +50,22 @@ class GroqClient:
     def __init__(self, api_key: str | None = None, usage: UsageLog | None = None):
         self.api_key = api_key or os.environ.get("GROQ_API_KEY")
         self.usage = usage if usage is not None else UsageLog()
+        # A shared Session reuses the TLS connection to api.groq.com across
+        # calls instead of renegotiating it every time -- this dataset makes
+        # 400+ sequential calls and the handshake cost was most of the wall
+        # time in early runs.
+        self._session = requests.Session()
 
     def _headers(self) -> dict:
         return {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
 
-    def _post(self, payload: dict, purpose: str, retries: int = 3) -> dict | None:
+    def _post(self, payload: dict, purpose: str, retries: int = 5) -> dict | None:
         if not self.api_key:
             return None
         last_err = None
         for attempt in range(retries):
             try:
-                r = requests.post(GROQ_URL, headers=self._headers(), json=payload, timeout=60)
+                r = self._session.post(GROQ_URL, headers=self._headers(), json=payload, timeout=30)
                 if r.status_code == 429:
                     time.sleep(2 ** attempt)
                     continue
@@ -76,7 +81,12 @@ class GroqClient:
                 return data
             except Exception as e:  # network hiccup, 5xx, etc. -- retry, then give up
                 last_err = e
-                time.sleep(1 + attempt)
+                # This sandbox's network to api.groq.com sometimes resets a kept-alive
+                # connection (RemoteDisconnected/ConnectionAborted); a fresh Session
+                # forces a new TCP+TLS handshake on the next attempt instead of
+                # reusing the now-dead connection.
+                self._session = requests.Session()
+                time.sleep(0.5 + attempt)
         if last_err:
             print(f"[groq_client] giving up on {purpose} after {retries} attempts: {last_err}")
         return None

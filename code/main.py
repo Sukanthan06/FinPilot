@@ -76,8 +76,10 @@ def main() -> None:
     flexible_event_ids: set[str] = set()
     payment_options_by_request: dict[str, list[dict]] = {}
 
-    for req in ds.requests:
+    for i, req in enumerate(ds.requests, 1):
         rid = req["request_id"]
+        if i % 10 == 0 or i == 1:
+            print(f"  [{i}/{len(ds.requests)}] {rid}", flush=True)
         bundle = bundles[rid]
         facts = build_financial_facts(bundle, message_signals, image_signals, rates)
         decision = decide(facts, req, bundle.payment_options)
