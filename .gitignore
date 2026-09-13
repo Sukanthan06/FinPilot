@@ -2,6 +2,8 @@ log.txt
 NOTES.md
 .env
 .venv/
+code/.cache/
+code/smoke_*.py
 __pycache__/
 *.pyc
 node_modules/
