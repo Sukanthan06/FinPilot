@@ -28,13 +28,15 @@ def extract_amount_from_image(
     client: GroqClient, image_id: str, related_event_id: str, image_dir: Path, event_context: dict
 ) -> ImageAmountSignal:
     image_path = image_dir / f"{image_id}.png"
+    # confidence=-1 sentinel: image missing. Distinct from a real 0-confidence
+    # "model looked and couldn't read it" so run.py knows not to cache it.
     default = ImageAmountSignal(
         source_id=image_id,
         related_event_id=related_event_id,
         amount=None,
         currency=None,
         date=None,
-        confidence=0.0,
+        confidence=-1.0,
     )
     if not image_path.exists():
         return default
@@ -49,7 +51,7 @@ def extract_amount_from_image(
         SYSTEM_PROMPT, user_text, image_path, purpose=f"image_extract:{image_id}"
     )
     if not result:
-        return default
+        return default  # API call failed; confidence=-1 sentinel, see above
 
     amount = result.get("amount")
     try:

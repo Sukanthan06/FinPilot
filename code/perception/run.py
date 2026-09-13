@@ -29,7 +29,8 @@ def run_perception(
             continue
         signal = extract_message_signal(client, m)
         message_signals[mid] = signal
-        message_cache.set(mid, asdict(signal))
+        if signal.confidence >= 0:  # don't freeze a failed Groq call into the cache
+            message_cache.set(mid, asdict(signal))
     message_cache.save()
 
     events_needing_image = {
@@ -49,7 +50,8 @@ def run_perception(
             client, img_id, related, image_dir, events_needing_image[related]
         )
         image_signals[related] = signal
-        image_cache.set(img_id, asdict(signal))
+        if signal.confidence >= 0:
+            image_cache.set(img_id, asdict(signal))
     image_cache.save()
 
     return message_signals, image_signals

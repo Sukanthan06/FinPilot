@@ -74,7 +74,7 @@ def build_explanation(
         f"payment_plan: {plan_str}\n"
         f"spending_changes_needed: {changes_str}\n"
     )
-    result = client.extract_json(SYSTEM_PROMPT, user_content, purpose="explain_decision", max_tokens=150)
+    result = client.extract_json(SYSTEM_PROMPT, user_content, purpose="explain_decision", max_tokens=400)
     if not result or not result.get("explanation"):
         return fallback
     return str(result["explanation"]).strip()

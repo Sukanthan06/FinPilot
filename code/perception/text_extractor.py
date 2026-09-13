@@ -50,6 +50,10 @@ def extract_message_signal(client: GroqClient, message_row: dict) -> MessageSign
     )
 
     if not result:
+        # confidence=-1 is a sentinel for "the Groq call itself failed" (network
+        # error, rate limit exhausted, json-validate 400) as opposed to a real
+        # confidence=0 "the model answered and found no fact" -- run.py must
+        # not cache this so a later run retries instead of freezing a failure.
         return MessageSignal(
             source_id=message_id,
             signal_type="none",
@@ -58,7 +62,7 @@ def extract_message_signal(client: GroqClient, message_row: dict) -> MessageSign
             amount=None,
             currency=None,
             effective_date=None,
-            confidence=0.0,
+            confidence=-1.0,
             is_newer_than_record=False,
             injection_flagged=injection_flagged,
         )

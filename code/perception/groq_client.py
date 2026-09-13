@@ -81,7 +81,7 @@ class GroqClient:
             print(f"[groq_client] giving up on {purpose} after {retries} attempts: {last_err}")
         return None
 
-    def extract_json(self, system_prompt: str, user_content: str, purpose: str, max_tokens: int = 400) -> dict | None:
+    def extract_json(self, system_prompt: str, user_content: str, purpose: str, max_tokens: int = 800) -> dict | None:
         payload = {
             "model": TEXT_MODEL,
             "messages": [
@@ -91,6 +91,11 @@ class GroqClient:
             "response_format": {"type": "json_object"},
             "max_tokens": max_tokens,
             "temperature": 0,
+            # gpt-oss-120b is a reasoning model: without this, some inputs burn
+            # the whole token budget on hidden <reasoning> content and return
+            # an empty completion, which Groq's json_object validator then
+            # rejects as a 400 rather than an empty JSON object.
+            "reasoning_effort": "low",
         }
         data = self._post(payload, purpose)
         return _parse_json_response(data)
