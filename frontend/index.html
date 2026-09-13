@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FinPilot — Affordability Console</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">FP</span>
+        <span class="brand-name">FinPilot</span>
+      </div>
+      <div class="search">
+        <input id="search" type="text" placeholder="Search request_id, user, type…" autocomplete="off" />
+      </div>
+      <div class="list" id="request-list"></div>
+    </aside>
+
+    <main class="main">
+      <div id="empty-state" class="empty-state">
+        <p>Select a request to view its affordability decision.</p>
+      </div>
+
+      <div id="content" class="content" hidden>
+        <header class="request-header">
+          <div>
+            <div class="eyebrow" id="req-type"></div>
+            <h1 id="req-id"></h1>
+            <p class="request-text" id="req-text"></p>
+          </div>
+          <div class="request-meta">
+            <div><span class="label">Requested</span><span class="value" id="req-amount"></span></div>
+            <div><span class="label">Request date</span><span class="value" id="req-date"></span></div>
+            <div><span class="label">Complete by</span><span class="value" id="req-deadline"></span></div>
+          </div>
+        </header>
+
+        <section class="cards">
+          <div class="card">
+            <span class="card-label">Affordability status</span>
+            <span class="card-value" id="status-value"></span>
+          </div>
+          <div class="card">
+            <span class="card-label">Recommended method</span>
+            <span class="card-value" id="method-value"></span>
+          </div>
+          <div class="card">
+            <span class="card-label">Amount safe to pay today</span>
+            <span class="card-value" id="safe-value"></span>
+          </div>
+          <div class="card">
+            <span class="card-label">Earliest full payment</span>
+            <span class="card-value" id="earliest-value"></span>
+          </div>
+        </section>
+
+        <section class="grid-2">
+          <div class="panel">
+            <h2>90-day balance forecast</h2>
+            <div id="chart"></div>
+          </div>
+          <div class="panel">
+            <h2>Payment plan</h2>
+            <table class="plan-table" id="plan-table"></table>
+
+            <h2 class="spacer-top">Spending changes needed</h2>
+            <div id="changes-list" class="tag-list"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Decision explanation</h2>
+          <p id="explanation" class="explanation"></p>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
