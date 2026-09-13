@@ -59,13 +59,18 @@ class GroqClient:
     def _headers(self) -> dict:
         return {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
 
-    def _post(self, payload: dict, purpose: str, retries: int = 5) -> dict | None:
+    def _post(self, payload: dict, purpose: str, retries: int = 3) -> dict | None:
         if not self.api_key:
             return None
         last_err = None
         for attempt in range(retries):
             try:
-                r = self._session.post(GROQ_URL, headers=self._headers(), json=payload, timeout=30)
+                # explicit (connect, read) timeout tuple: this sandbox's network
+                # to api.groq.com occasionally black-holes a connection rather
+                # than resetting it, and a single float timeout doesn't reliably
+                # bound that on every platform -- keep each attempt short so a
+                # bad connection can't stall the whole 250-request run.
+                r = self._session.post(GROQ_URL, headers=self._headers(), json=payload, timeout=(5, 20))
                 if r.status_code == 429:
                     time.sleep(2 ** attempt)
                     continue
